@@ -1,0 +1,96 @@
+package model;
+
+import java.io.*;
+import java.util.*;
+
+public class knn {
+    private double[][] trainFeatures;
+    private int[] trainLabels;
+    private int k = 3;
+
+    /**
+     * Huấn luyện KNN model
+     */
+    public void train(double[][] features, int[] labels) {
+        this.trainFeatures = features;
+        this.trainLabels = labels;
+        System.out.println("KNN Model trained with " + features.length + " samples");
+    }
+
+    /**
+     * Dự đoán một mẫu
+     */
+    public int predict(double[] features) {
+        List<Neighbor> neighbors = new ArrayList<>();
+
+        for (int i = 0; i < trainFeatures.length; i++) {
+            double distance = 0;
+            for (int j = 0; j < features.length; j++) {
+                distance += Math.pow(features[j] - trainFeatures[i][j], 2);
+            }
+            neighbors.add(new Neighbor(Math.sqrt(distance), trainLabels[i]));
+        }
+
+        // Sắp xếp theo khoảng cách
+        neighbors.sort(Comparator.comparingDouble(n -> n.distance));
+
+        // Đếm phiếu
+        int[] votes = new int[8];
+        for (int i = 0; i < Math.min(k, neighbors.size()); i++) {
+            votes[neighbors.get(i).label]++;
+        }
+
+        // Tìm max
+        int predicted = 1;
+        for (int i = 2; i <= 7; i++) {
+            if (votes[i] > votes[predicted]) {
+                predicted = i;
+            }
+        }
+        return predicted;
+    }
+
+    /**
+     * Đánh giá model
+     */
+    public double evaluate(double[][] testFeatures, int[] testLabels) {
+        int correct = 0;
+        for (int i = 0; i < testFeatures.length; i++) {
+            if (predict(testFeatures[i]) == testLabels[i]) {
+                correct++;
+            }
+        }
+        return (double) correct / testFeatures.length * 100;
+    }
+
+    /**
+     * Lưu model
+     */
+    public void saveModel(String path) throws IOException {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path));
+        oos.writeInt(k);
+        oos.writeObject(trainFeatures);
+        oos.writeObject(trainLabels);
+        oos.close();
+        System.out.println("KNN model saved: " + path);
+    }
+
+    /**
+     * Load model
+     */
+    @SuppressWarnings("unchecked")
+    public void loadModel(String path) throws IOException, ClassNotFoundException {
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path));
+        k = ois.readInt();
+        trainFeatures = (double[][]) ois.readObject();
+        trainLabels = (int[]) ois.readObject();
+        ois.close();
+        System.out.println("KNN model loaded: " + path);
+    }
+
+    static class Neighbor {
+        double distance;
+        int label;
+        Neighbor(double d, int l) { distance = d; label = l; }
+    }
+}
