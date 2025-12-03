@@ -1,3 +1,5 @@
+package src.main;
+
 public class Animal {
     // Các đặc trưng động vật
     private int hair, feathers, eggs, milk;

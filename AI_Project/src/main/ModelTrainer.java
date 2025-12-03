@@ -1,3 +1,5 @@
+package src.main;
+
 import java.io.*;
 import java.util.*;
 
@@ -29,26 +31,6 @@ public class ModelTrainer {
         }
 
 
-
-        // Đếm phiếu của k neighbors gần nhất
-        Map<Integer, Integer> votes = new HashMap<>();
-        for (int i = 0; i < Math.min(k, neighbors.size()); i++) {
-            int label = neighbors.get(i).label;
-            votes.put(label, votes.getOrDefault(label, 0) + 1);
-        }
-
-
-
-
-
-    private static class Neighbor {
-        double distance;
-        int label;
-
-        Neighbor(double distance, int label) {
-            this.distance = distance;
-            this.label = label;
-        }
     }
 
     // Getter/Setter
