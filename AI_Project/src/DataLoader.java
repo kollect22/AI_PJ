@@ -9,7 +9,7 @@ public class Dataloader {
         BufferedReader br = new BufferedReader(new FileReader(filePath));
 
         String line;
-        br.readLine(); // Bỏ qua dòng tiêu đề
+        br.readLine();
 
         while ((line = br.readLine()) != null) {
             String[] parts = line.split(",");
@@ -17,7 +17,7 @@ public class Dataloader {
             if (parts.length >= 17) {
                 int[] features = new int[16];
 
-                // Bỏ qua cột đầu (tên) và lấy 16 đặc trưng tiếp theo
+
                 for (int i = 0; i < 16; i++) {
                     features[i] = Integer.parseInt(parts[i + 1].trim());
                 }
@@ -43,13 +43,13 @@ public class Dataloader {
         double[][] testFeatures = new double[animals.size() - trainSize][16];
         int[] testLabels = new int[animals.size() - trainSize];
 
-        // Tập huấn luyện
+        // huấn luyện
         for (int i = 0; i < trainSize; i++) {
             trainFeatures[i] = animals.get(i).getFeatures();
             trainLabels[i] = animals.get(i).getType();
         }
 
-        // Tập kiểm tra
+
         for (int i = trainSize; i < animals.size(); i++) {
             testFeatures[i - trainSize] = animals.get(i).getFeatures();
             testLabels[i - trainSize] = animals.get(i).getType();
