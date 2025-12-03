@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from pathlib import Path
@@ -36,6 +37,10 @@ rf = RandomForestClassifier()
 rf.fit(X_train, y_train)
 rf_y_pred = rf.predict(X_test)
 
+knn = KNeighborsClassifier(n_neighbors=3) 
+knn.fit(X_train, y_train)
+knn_y_pred = knn.predict(X_test)
+
 def calc_metrics(y_pred, y_test):
     return accuracy_score(y_pred, y_test), precision_score(y_pred, y_test, average='weighted'), recall_score(y_pred, y_test, average='weighted'), f1_score(y_pred, y_test, average='weighted')  
 
@@ -49,3 +54,4 @@ model_dir.mkdir(exist_ok=True)
 
 joblib.dump(dt, model_dir / "decision_tree.pkl")
 joblib.dump(rf, model_dir / "random_forest.pkl")
+joblib.dump(knn, model_dir / "knn.pkl")
