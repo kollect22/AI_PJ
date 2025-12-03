@@ -1,7 +1,9 @@
+package src.main;
+
 import java.io.*;
 import java.util.*;
 
-public class Dataloader {
+public class DataLoader {
 
     // Đọc dữ liệu từ CSV và trả về danh sách Animal
     public List<Animal> loadData(String filePath) throws IOException {
