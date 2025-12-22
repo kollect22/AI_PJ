@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tensorflow import keras
 from tensorflow.keras import layers, models, optimizers
 from sklearn.tree import DecisionTreeClassifier
@@ -8,7 +10,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from pathlib import Path    
+from pathlib import Path
+from sklearn.metrics import confusion_matrix    
 import joblib
 
 # lấy path & đọc các dataset
@@ -91,3 +94,22 @@ joblib.dump(dt, model_dir / "decision_tree.pkl")
 joblib.dump(rf, model_dir / "random_forest.pkl")
 joblib.dump(knn, model_dir / "knn.pkl")
 tab_model.save(model_dir / "tabtransformer.keras")
+
+def plot_and_save_cm(y_test, y_pred, model_name):
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=range(1, 8), yticklabels=range(1, 8))
+    plt.title(f'Confusion Matrix - {model_name}')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    
+    save_path = model_dir / f"cm_{model_name}.png"
+    plt.savefig(save_path)
+    print(f"Đã lưu Confusion Matrix cho {model_name} tại {save_path}")
+    plt.close()
+
+plot_and_save_cm(y_test, dt_y_pred, "DecisionTree")
+plot_and_save_cm(y_test, rf_y_pred, "RandomForest")
+plot_and_save_cm(y_test, knn_y_pred, "KNN")
+plot_and_save_cm(y_test, tt_y_pred, "TabTransformer")
