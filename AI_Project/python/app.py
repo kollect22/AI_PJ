@@ -9,13 +9,15 @@ from pathlib import Path
 st.set_page_config(page_title="Phân loại động vật", page_icon="🦁")
 st.title("🦁 Dự đoán lớp động vật (Zoo Classification)")
 
+loader = DataLoader()
+model_dir = Path(loader.DATA_DIR) / "model"
+
 @st.cache_resource
 def load_models():
-    model_dir = Path("data/model")
     try:
         return {
-            "Decision Tree": joblib.load(model_dir / "decision_tree.pkl"),
-            "Random Forest": joblib.load(model_dir / "random_forest.pkl"),
+            "Decision Tree": joblib.load(model_dir / "decisiontree.pkl"),
+            "Random Forest": joblib.load(model_dir / "randomforest.pkl"),
             "KNN": joblib.load(model_dir / "knn.pkl"),
             "TabTransformer": keras.models.load_model(model_dir / "tabtransformer.keras")
         }
