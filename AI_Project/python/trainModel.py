@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 import matplotlib.pyplot as plt
 import seaborn as sns
-from tensorflow import keras
 import joblib
-from tensorflow.keras import layers, models, optimizers
+from pytorch_tabular import TabularModel
+from pytorch_tabular.models.tab_transformer import TabTransformerConfig
+from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -18,6 +18,7 @@ from dataLoader import DataLoader
 loader = DataLoader()
 X, y = loader.load_data()
 
+X = X.astype(float)
 # chia train - test 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -50,60 +51,69 @@ for name, model in models.items():
     
     joblib.dump(model, model_dir / f"{name.lower()}.pkl")
 
-def build_simple_tabtransformer(input_dim, num_classes):
-    inputs = keras.Input(shape=(input_dim,))
-    
-    projection = layers.Dense(64, activation="relu")(inputs)
-    x = layers.Reshape((4, 16))(projection) 
-    
-    attention = layers.MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
-    x = layers.Add()([x, attention])
-    x = layers.LayerNormalization(epsilon = 1e-6)(x)
+#tabtran
+df = X.copy()
+df["label"] = y
 
-    #feed forward network
-    x_ffn = layers.Dense(16, activation="relu")(x)
-    x_ffn = layers.Dense(16)(x_ffn)
-    x = layers.Add()([x, x_ffn])
-    x = layers.LayerNormalization(epsilon=1e-6)(x)
-    
-    x = layers.Flatten()(x)
-    x = layers.Dropout(0.1)(x)
-    x = layers.Dense(32, activation="relu")(x)
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
-    
-    model = keras.Model(inputs=inputs, outputs=outputs)
-    return model
+train_df, test_df = train_test_split(df, test_size = 0.2, random_state = 42)
 
-tab_model = build_simple_tabtransformer(input_dim=16, num_classes=7)
+continuous_cols = X.columns.tolist()
+target = "label"
 
-tab_model.compile(
-    optimizer = keras.optimizers.Adam(learning_rate = 0.001),
-    loss = 'sparse_categorical_crossentropy',
-    metrics = ['accuracy']
+data_config = DataConfig(
+    target = [target],
+    continuous_cols= continuous_cols,
+    num_workers = 0
 )
 
-print("\nĐang train TabTransformer...")
-history = tab_model.fit(
-    X_train, y_train, 
-    epochs=70,
-    batch_size=16, 
-    validation_data=(X_test, y_test),
-    verbose=0
+model_config = TabTransformerConfig(
+    task = "classification",
+    metrics = ["accuracy"],
+    input_embed_dim = 32,
+    num_heads = 4,
+    num_attn_blocks = 4
 )
 
-y_prob = tab_model.predict(X_test)
-tt_y_pred = np.argmax(y_prob, axis=1)
-tt_metrics = calc_metrics(y_test, tt_y_pred)
+trainer_config = TrainerConfig(
+    max_epochs = 70,
+    batch_size = 16,
+    accelerator= "auto",
+    trainer_kwargs = {
+        "num_sanity_val_steps" : 0,
+        "enable_progress_bar": False,
+        "log_every_n_steps": 1
+    }
+)
+
+optimizer_config = OptimizerConfig(
+    optimizer = "Adam",
+)
+tab_model = TabularModel(
+    data_config=data_config,
+    model_config=model_config,
+    optimizer_config=optimizer_config,
+    trainer_config=trainer_config,
+)
+
+tab_model.fit(train = train_df, validation=test_df)
+
+pred_df = tab_model.predict(test_df)
+
+y_true_tt = test_df[target].values
+y_pred_tt = pred_df["label_prediction"].values
+
+tt_metrics = calc_metrics(y_true_tt, y_pred_tt)
 
 print(f"{'TabTransformer':<15} | {tt_metrics[0]:.4f}   | {tt_metrics[1]:.4f}   | {tt_metrics[2]:.4f}   | {tt_metrics[3]:.4f}")
 print("-" * 65)
 
-tab_model.save(model_dir / "tabtransformer.keras")
+tab_model.save_model(model_dir / "tabtransformer_pytorch")
 
+#confusion matrix
 def plot_cm(y_true, y_pred, title, filename):
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=range(1,8), yticklabels=range(1,8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=range(0,7), yticklabels=range(0,7))
     plt.title(title)
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
@@ -111,6 +121,6 @@ def plot_cm(y_true, y_pred, title, filename):
     plt.savefig(model_dir / filename)
     plt.close()
 
-plot_cm(y_test, tt_y_pred, "Confusion Matrix - TabTransformer", "cm_tabtransformer.png")
+plot_cm(y_test, y_pred_tt, "Confusion Matrix - TabTransformer", "cm_tabtransformer.png")
 
 print(f"Đã hoàn tất! Model được lưu tại: {model_dir}")

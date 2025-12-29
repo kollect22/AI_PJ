@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 from dataLoader import DataLoader
-from tensorflow import keras
+from pytorch_tabular import TabularModel
 from pathlib import Path
 
 st.set_page_config(page_title="Phân loại động vật", page_icon="🦁")
@@ -14,14 +14,18 @@ model_dir = Path(loader.DATA_DIR) / "model"
 
 @st.cache_resource
 def load_models():
+    models = {}
     try:
-        return {
-            "Decision Tree": joblib.load(model_dir / "decisiontree.pkl"),
-            "Random Forest": joblib.load(model_dir / "randomforest.pkl"),
-            "KNN": joblib.load(model_dir / "knn.pkl"),
-            "TabTransformer": keras.models.load_model(model_dir / "tabtransformer.keras")
-        }
-    except FileNotFoundError:
+        models["Decision Tree"] = joblib.load(model_dir / "decisiontree.pkl")
+        models["Random Forest"] = joblib.load(model_dir / "randomforest.pkl")
+        models["KNN"] = joblib.load(model_dir / "knn.pkl")
+ 
+        tab_path = model_dir / "tabtransformer_pytorch"
+        models["TabTransformer"] = TabularModel.load_model(tab_path)
+
+        return models
+    except Exception as e:
+        st.error(f"Lỗi load model: {e}")
         return None
 
 models = load_models()
@@ -45,14 +49,14 @@ if st.button("Dự đoán ngay"):
         st.error("Chưa tìm thấy model. Hãy chạy trainModel.py trước!")
     else:
         cols = st.columns(len(models))
-        X_input = input_df.values
         
         for idx, (name, model) in enumerate(models.items()):
             with cols[idx]:
                 if name == "TabTransformer":
-                    pred = np.argmax(model.predict(X_input), axis=1)[0]
+                    pred_df = model.predict(input_df)
+                    pred = pred_df["label_prediction"].values[0]
                 else:
-                    pred = model.predict(X_input)[0]
+                    pred = model.predict(input_df.values)[0]
                 
                 class_name = DataLoader.CLASS_NAMES.get(pred + 1, "Unknown")
                 
