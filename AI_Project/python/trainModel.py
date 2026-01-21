@@ -52,42 +52,46 @@ for name, model in models.items():
     joblib.dump(model, model_dir / f"{name.lower()}.pkl")
 
 #tabtran
+print("-" * 30)
+print("Đang huấn luyện TabTransformer...")
+
 df = X.copy()
-df["label"] = y
+df["label"] = y 
 
-train_df, test_df = train_test_split(df, test_size = 0.2, random_state = 42)
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
-continuous_cols = X.columns.tolist()
-target = "label"
+target_col_name = "label" 
+
+continuous_cols = ['legs']
+categorical_cols = [col for col in X.columns if col != 'legs']
 
 data_config = DataConfig(
-    target = [target],
-    continuous_cols= continuous_cols,
-    num_workers = 0
+    target=[target_col_name],
+    continuous_cols=continuous_cols,
+    categorical_cols=categorical_cols,
+    num_workers=0
 )
 
 model_config = TabTransformerConfig(
-    task = "classification",
-    metrics = ["accuracy"],
-    input_embed_dim = 32,
-    num_heads = 4,
-    num_attn_blocks = 4
+    task="classification",
+    metrics=["accuracy"],
+    input_embed_dim=16, 
+    num_heads=4, 
+    num_attn_blocks=2
 )
 
 trainer_config = TrainerConfig(
-    max_epochs = 70,
-    batch_size = 16,
-    accelerator= "auto",
-    trainer_kwargs = {
-        "num_sanity_val_steps" : 0,
-        "enable_progress_bar": False,
+    max_epochs=70,
+    batch_size=16,
+    accelerator="cpu",
+    trainer_kwargs={
+        "enable_progress_bar": False, 
         "log_every_n_steps": 1
     }
 )
 
-optimizer_config = OptimizerConfig(
-    optimizer = "Adam",
-)
+optimizer_config = OptimizerConfig(optimizer="Adam")
+
 tab_model = TabularModel(
     data_config=data_config,
     model_config=model_config,
@@ -95,11 +99,11 @@ tab_model = TabularModel(
     trainer_config=trainer_config,
 )
 
-tab_model.fit(train = train_df, validation=test_df)
+tab_model.fit(train=train_df, validation=test_df)
 
 pred_df = tab_model.predict(test_df)
 
-y_true_tt = test_df[target].values
+y_true_tt = test_df[target_col_name].values
 y_pred_tt = pred_df["label_prediction"].values
 
 tt_metrics = calc_metrics(y_true_tt, y_pred_tt)
