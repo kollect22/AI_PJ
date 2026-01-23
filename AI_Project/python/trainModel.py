@@ -33,8 +33,8 @@ model_dir = Path(loader.DATA_DIR) / "model"
 model_dir.mkdir(parents=True, exist_ok=True)
 
 models = {
-    "DecisionTree": DecisionTreeClassifier(),
-    "RandomForest": RandomForestClassifier(),
+    "DecisionTree": DecisionTreeClassifier(criterion='entropy', random_state= 42),
+    "RandomForest": RandomForestClassifier(n_estimators=100, random_state=42),
     "KNN": KNeighborsClassifier(n_neighbors=3)
 }
 

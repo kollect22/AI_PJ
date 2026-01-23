@@ -38,7 +38,11 @@ for feature in DataLoader.FEATURE_NAMES:
         input_data[feature] = st.sidebar.slider("Số chân (Legs)", 0, 8, 4)
     else:
         label = f"{feature.capitalize()}?" 
-        input_data[feature] = st.sidebar.selectbox(label, [0, 1])
+        input_data[feature] = st.sidebar.selectbox(
+            label, 
+            [0, 1], 
+            format_func=lambda x: "Có (Yes)" if x == 1 else "Không (No)"
+        )
 
 input_df = pd.DataFrame([input_data])
 
